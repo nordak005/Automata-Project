@@ -1,0 +1,9 @@
+{
+  "name": "balanced-parentheses-pda-checker",
+  "version": "1.0.0",
+  "description": "Balanced Parentheses Checker using Pushdown Automata (PDA)",
+  "type": "module",
+  "scripts": {
+    "test": "node test_pda.js"
+  }
+}

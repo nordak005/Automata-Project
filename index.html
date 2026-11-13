@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balanced Parentheses Checker | Pushdown Automata (PDA)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-title-group">
+                <h1>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan);">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                        <path d="M6 6h10"/>
+                        <path d="M6 10h10"/>
+                    </svg>
+                    Pushdown Automata (PDA) Parentheses Checker
+                </h1>
+                <p>
+                    A theoretical computer science simulation verifying Context-Free Language balance across 
+                    <code>()</code>, <code>{}</code>, and <code>[]</code> using a Deterministic Pushdown Automaton (DPDA) with LIFO stack operations.
+                </p>
+            </div>
+            <div class="theory-pills">
+                <span class="theory-pill">M = (Q, Σ, Γ, δ, q₀, Z₀, F)</span>
+                <span class="theory-pill">CFL / Dyck Language</span>
+                <span class="theory-pill">O(n) Time • O(n) Space</span>
+            </div>
+        </header>
+
+        <!-- Expression Input Panel -->
+        <section class="input-panel" aria-label="Input Configuration">
+            <div class="input-row">
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="expression-input" 
+                        class="expression-input" 
+                        placeholder="Enter bracket expression, e.g. {[()]}" 
+                        autocomplete="off"
+                        spellcheck="false"
+                        value="{[()]}"
+                    />
+                    <button id="btn-clear-input" class="input-clear-btn" title="Clear input">✕</button>
+                </div>
+                <button id="btn-check" class="btn btn-primary" title="Simulate and Auto-Play">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    Check Expression
+                </button>
+                <button id="btn-reset" class="btn btn-secondary" title="Reset all views to initial state">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    Reset
+                </button>
+            </div>
+
+            <!-- Example Test Presets -->
+            <div class="presets-row">
+                <span class="presets-label">Quick Test Presets:</span>
+                <button class="preset-chip valid" data-value="{[()]}">{[()]} (Nested Valid)</button>
+                <button class="preset-chip valid" data-value="()[]{}">()[]{} (Consecutive Valid)</button>
+                <button class="preset-chip invalid" data-value="([)]">([)] (Mismatch)</button>
+                <button class="preset-chip invalid" data-value="((()">((() (Unclosed)</button>
+                <button class="preset-chip invalid" data-value="())">()) (Underflow)</button>
+                <button class="preset-chip valid" data-value="">ε (Empty String)</button>
+                <button class="preset-chip invalid" data-value="(a+b)">(a+b) (Invalid Token)</button>
+            </div>
+        </section>
+
+        <!-- Main Simulation Dashboard (2 Columns) -->
+        <main class="dashboard-grid">
+
+            <!-- Left Column: Tape, States, Controls, and Verdict -->
+            <div class="simulation-column">
+
+                <!-- Input Tape Reader Panel -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="6" width="20" height="12" rx="2"/>
+                                <path d="M12 12h.01"/>
+                                <path d="M17 12h.01"/>
+                                <path d="M7 12h.01"/>
+                            </svg>
+                            Input Tape Head (Current Symbol)
+                        </span>
+                    </div>
+                    <div id="tape-container" class="tape-container">
+                        <!-- Populated dynamically via TapeView.js -->
+                    </div>
+                </div>
+
+                <!-- PDA States Panel -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="4"/>
+                            </svg>
+                            Current PDA State (Q)
+                        </span>
+                    </div>
+
+                    <div class="state-nodes-grid">
+                        <div id="state-q0" class="state-card">
+                            <div class="state-badge">q₀</div>
+                            <div class="state-desc">Start State</div>
+                        </div>
+                        <div id="state-q1" class="state-card active">
+                            <div class="state-badge">q₁</div>
+                            <div class="state-desc">Processing</div>
+                        </div>
+                        <div id="state-q-accept" class="state-card accept">
+                            <div class="state-badge">q_accept</div>
+                            <div class="state-desc">Accepted (F)</div>
+                        </div>
+                        <div id="state-q-reject" class="state-card reject">
+                            <div class="state-badge">q_reject</div>
+                            <div class="state-desc">Trap State</div>
+                        </div>
+                    </div>
+
+                    <div class="state-flow-legend">
+                        <span>Flow: q₀ ──ε──> q₁</span>
+                        <span>q₁ ──ε, stack=∅──> q_accept</span>
+                        <span>q₁ ──error──> q_reject</span>
+                    </div>
+
+                    <div class="transition-formula-box">
+                        <span class="transition-label">Active Transition:</span>
+                        <code id="transition-formula">δ(q0, ε, ε) -> (q1, ε)</code>
+                    </div>
+                </div>
+
+                <!-- Step-by-Step Playback Controls -->
+                <div class="panel-card">
+                    <div class="playback-panel">
+                        <!-- Step Progress Bar -->
+                        <div class="playback-progress-track" title="Execution Progress">
+                            <div id="step-progress-bar" class="playback-progress-fill"></div>
+                        </div>
+
+                        <div class="playback-controls-row">
+                            <div class="playback-buttons">
+                                <button id="btn-start" class="ctrl-btn" title="Jump to First Step">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="3"/></svg>
+                                </button>
+                                <button id="btn-prev" class="ctrl-btn" title="Previous Step (Left Arrow)">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 19 7 12 19 5 19 19"/></svg>
+                                    <span>Prev</span>
+                                </button>
+                                <button id="btn-play" class="ctrl-btn" title="Toggle Auto-Play / Pause (Space)">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                    <span>Play</span>
+                                </button>
+                                <button id="btn-next" class="ctrl-btn" title="Next Step (Right Arrow)">
+                                    <span>Next</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 5 17 12 5 19 5 5"/></svg>
+                                </button>
+                                <button id="btn-end" class="ctrl-btn" title="Jump to Last Step">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="3"/></svg>
+                                </button>
+                            </div>
+
+                            <div id="playback-step-info" class="playback-step-info">
+                                Step 0 of 0
+                            </div>
+
+                            <div class="speed-control">
+                                <span>Speed:</span>
+                                <input type="range" id="speed-slider" class="speed-slider" min="150" max="1500" step="50" value="700" title="Adjust animation interval">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verdict / Status Banner -->
+                <div id="verdict-banner" class="verdict-banner idle">
+                    <div id="verdict-status" class="verdict-status">
+                        STATUS: AWAITING INPUT
+                    </div>
+                    <div id="verdict-description" class="verdict-description">
+                        Enter a bracket string and click "Check Expression" to start the simulation.
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Visual Stack Chamber & HUD -->
+            <div class="visualizer-column">
+                <div class="panel-card stack-visualizer-container">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>
+                                <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>
+                                <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
+                            </svg>
+                            PDA Stack Visualizer (Γ)
+                        </span>
+                        <span id="hud-stack-depth" class="stack-depth-badge">0 elements</span>
+                    </div>
+
+                    <!-- Heads-Up Display (HUD) Tiles -->
+                    <div class="stack-hud-grid">
+                        <div class="hud-tile">
+                            <span class="hud-label">Stack Top (X)</span>
+                            <span id="hud-stack-top" class="hud-value">∅ (Empty)</span>
+                        </div>
+                        <div class="hud-tile">
+                            <span class="hud-label">Read Symbol (a)</span>
+                            <span id="hud-scanned-char" class="hud-value">-</span>
+                        </div>
+                        <div class="hud-tile">
+                            <span class="hud-label">Operation</span>
+                            <span id="hud-current-op" class="hud-value">IDLE</span>
+                        </div>
+                    </div>
+
+                    <div class="stack-meta-bar">
+                        <span>↑ Open Top (Push / Pop Access)</span>
+                        <span>LIFO Discipline</span>
+                    </div>
+
+                    <!-- Vertical Stack Tube (Bottom is Base) -->
+                    <div id="stack-chamber" class="stack-chamber">
+                        <!-- Frames rendered dynamically via StackView.js -->
+                    </div>
+
+                    <div class="stack-base-marker">
+                        ═══ STACK BASE (Z₀ Sentinel) ═══
+                    </div>
+
+                    <!-- Step Operation Narrative Explanation -->
+                    <div class="stack-explanation-card">
+                        <span id="explanation-op-tag" class="explanation-op-indicator INITIALIZE">IDLE</span>
+                        <span id="explanation-text" style="flex: 1;">Waiting for execution step...</span>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Execution History & Transition Matrix Table -->
+        <section class="history-section" aria-label="Execution Log">
+            <div class="panel-header">
+                <span class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    Execution History & Formal Transition Trace
+                </span>
+                
+                <div class="table-header-actions">
+                    <button id="btn-copy-trace" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" disabled title="Export trace table to Markdown">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy Trace (Markdown)
+                    </button>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">
+                        Click row to scrub
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="execution-table">
+                    <thead>
+                        <tr>
+                            <th>Step</th>
+                            <th>State</th>
+                            <th>Symbol (a)</th>
+                            <th>Stack Top (X)</th>
+                            <th>Stack Content</th>
+                            <th>Operation</th>
+                            <th>Transition δ(q, a, X)</th>
+                            <th>Explanation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="execution-table-body">
+                        <!-- Populated dynamically via TableView.js -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Footer / Academic Context -->
+        <footer style="margin-top: 16px; text-align: center; font-size: 0.825rem; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <span>Keyboard Shortcuts: <kbd style="background: var(--bg-surface-elevated); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">Space</kbd> Play/Pause &bull; <kbd style="background: var(--bg-surface-elevated); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">←</kbd> / <kbd style="background: var(--bg-surface-elevated); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">→</kbd> Step Prev/Next</span>
+            <span>Automata Theory & Computability Project &bull; Vanilla JavaScript Engine</span>
+        </footer>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="toast-notification">Message</div>
+
+    <!-- Application Script (ES Module) -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
